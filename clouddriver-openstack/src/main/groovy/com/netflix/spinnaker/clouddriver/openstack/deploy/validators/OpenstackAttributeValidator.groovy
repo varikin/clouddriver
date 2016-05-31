@@ -80,6 +80,17 @@ class OpenstackAttributeValidator {
     result
   }
 
+  boolean validateNotEmpty(List value, String attribute) {
+    def result
+    if (value != null && value.size() > 0) {
+      result = true
+    } else {
+      errors.rejectValue("${context}.${attribute}",  "${context}.${attribute}.empty")
+      result = false
+    }
+    result
+  }
+
   boolean validateNonNegative(int value, String attribute) {
     def result
     if (value >= 0) {
