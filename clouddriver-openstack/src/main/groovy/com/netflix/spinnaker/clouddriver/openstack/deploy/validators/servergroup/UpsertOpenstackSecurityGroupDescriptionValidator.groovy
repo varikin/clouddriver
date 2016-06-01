@@ -49,7 +49,7 @@ class UpsertOpenstackSecurityGroupDescriptionValidator extends DescriptionValida
         validator.validateCIDR(r.cidr, "cidr")
         validator.validatePort(r.fromPort, "fromPort")
         validator.validatePort(r.toPort, "toPort")
-        validator.validateNotEmpty(r.ruleType, "ruleType")
+        validator.validateRuleType(r.ruleType, "ruleType")
       }
     }
   }

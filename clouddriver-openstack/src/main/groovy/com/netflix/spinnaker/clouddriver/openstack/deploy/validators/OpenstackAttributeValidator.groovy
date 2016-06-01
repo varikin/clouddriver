@@ -16,10 +16,13 @@
 
 package com.netflix.spinnaker.clouddriver.openstack.deploy.validators
 
-import com.netflix.spinnaker.clouddriver.model.Subnet
+import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.OpenstackSecurityGroupDescription
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackCredentials
 import com.netflix.spinnaker.clouddriver.security.AccountCredentialsProvider
+import org.apache.commons.net.util.SubnetUtils
 import org.springframework.validation.Errors
+
+import static com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.OpenstackSecurityGroupDescription.Rule
 
 /**
  * TODO most of the validate methods can be moved into base class,
@@ -32,7 +35,8 @@ class OpenstackAttributeValidator {
 
   OpenstackAttributeValidator(String context, Errors errors) {
     this.context = context
-    this.errors = errors  }
+    this.errors = errors
+  }
 
   static final maxPort = (1 << 16) - 1
 
@@ -75,7 +79,7 @@ class OpenstackAttributeValidator {
     if (value != "" && value != null && value != []) {
       result = true
     } else {
-      errors.rejectValue("${context}.${attribute}",  "${context}.${attribute}.empty")
+      errors.rejectValue("${context}.${attribute}", "${context}.${attribute}.empty")
       result = false
     }
     result
@@ -86,7 +90,7 @@ class OpenstackAttributeValidator {
     if (value != null && value.size() > 0) {
       result = true
     } else {
-      errors.rejectValue("${context}.${attribute}",  "${context}.${attribute}.empty")
+      errors.rejectValue("${context}.${attribute}", "${context}.${attribute}.empty")
       result = false
     }
     result
@@ -125,14 +129,13 @@ class OpenstackAttributeValidator {
     if (result) {
       def openstackCredentials = accountCredentialsProvider.getCredentials(account)
       if (!(openstackCredentials?.credentials instanceof OpenstackCredentials)) {
-        errors.rejectValue("${context}.account",  "${context}.account.notFound")
+        errors.rejectValue("${context}.account", "${context}.account.notFound")
         result = false
       }
     }
     result
   }
 
-  //TODO test
   /**
    * Validate string is in UUID format.
    * @param value
@@ -140,17 +143,37 @@ class OpenstackAttributeValidator {
    * @return
    */
   def validateUUID(String value, String attribute) {
+    boolean result = false
     try {
       UUID.fromString(value)
-    } catch (IllegalAccessException e) {
+      result = true
+    } catch (IllegalArgumentException e) {
       errors.rejectValue("${context}.${attribute}", "${context}.${attribute}.notUUID")
     }
+    result
   }
 
-  //TODO test
+  /**
+   * Validate string is in CIDR format.
+   * @param value
+   * @param attribute
+   * @return
+   */
   def validateCIDR(String value, String attribute) {
-    validateNotEmpty(value, attribute)
-    //TODO validate CIDR format
-    Subnet
+    boolean result = validateNotEmpty(value, attribute)
+    if (result) {
+      try {
+        new SubnetUtils(value)
+      } catch (IllegalArgumentException e) {
+        errors.rejectValue("${context}.${attribute}", "${context}.${attribute}.invalidCIDR")
+        result = false
+      }
+    }
+    result
+  }
+
+  def validateRuleType(String value, String attribute) {
+    validateNotEmpty(value, attribute) &&
+      validateByContainment(value, attribute, [Rule.RULE_TYPE_TCP])
   }
 }

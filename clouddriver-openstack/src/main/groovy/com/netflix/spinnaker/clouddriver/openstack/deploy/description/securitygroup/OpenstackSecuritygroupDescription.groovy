@@ -33,7 +33,8 @@ class OpenstackSecurityGroupDescription extends OpenstackAtomicOperationDescript
   List<Rule> rules
 
   static class Rule {
-    String ruleType = "TCP" //only support TCP for now, in openstack could also be UDP or ICMP
+    static final String RULE_TYPE_TCP = 'TCP'
+    String ruleType = RULE_TYPE_TCP //only support TCP for now, in openstack could also be UDP or ICMP
     int fromPort
     int toPort
     String cidr
