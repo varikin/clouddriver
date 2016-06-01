@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.clouddriver.openstack.deploy.validators
 
+import com.netflix.spinnaker.clouddriver.model.Subnet
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackCredentials
 import com.netflix.spinnaker.clouddriver.security.AccountCredentialsProvider
 import org.springframework.validation.Errors
@@ -131,4 +132,25 @@ class OpenstackAttributeValidator {
     result
   }
 
+  //TODO test
+  /**
+   * Validate string is in UUID format.
+   * @param value
+   * @param attribute
+   * @return
+   */
+  def validateUUID(String value, String attribute) {
+    try {
+      UUID.fromString(value)
+    } catch (IllegalAccessException e) {
+      errors.rejectValue("${context}.${attribute}", "${context}.${attribute}.notUUID")
+    }
+  }
+
+  //TODO test
+  def validateCIDR(String value, String attribute) {
+    validateNotEmpty(value, attribute)
+    //TODO validate CIDR format
+    Subnet
+  }
 }

@@ -19,11 +19,13 @@ package com.netflix.spinnaker.clouddriver.openstack.client
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.OpenstackSecurityGroupDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
+import org.apache.commons.lang.StringUtils
 import org.openstack4j.api.Builders
 import org.openstack4j.api.OSClient
 import org.openstack4j.model.common.ActionResponse
 import org.openstack4j.model.compute.IPProtocol
 import org.openstack4j.model.compute.RebootType
+import org.openstack4j.model.compute.SecGroupExtension
 
 /**
  * Provides access to the Openstack API.
@@ -59,16 +61,25 @@ abstract class OpenstackClientProvider {
   //and ActionResponse so we need to be able to handle this.
   /**
    * Create or update a security group, applying a list of rules.
+   *
+   * Note: 2 default egress rules are created when creating a new security group
+   * automatically with remote IP prefixes 0.0.0.0/0 and ::/0.
+   *
    * @param securityGroupName
    * @param description
    * @param rules
    */
-  void upsertSecurityGroup(String securityGroupName, String description, List<OpenstackSecurityGroupDescription.Rule> rules) {
+  void upsertSecurityGroup(String securityGroupId, String securityGroupName, String description, List<OpenstackSecurityGroupDescription.Rule> rules) {
 
-    //try getting existing security group
-    def existing = client.compute().securityGroups().get(securityGroupName)
+    //try getting existing security group, update if needed
+    SecGroupExtension existing
+    if (StringUtils.isNotEmpty(securityGroupId)) {
+      existing = client.compute().securityGroups().get(securityGroupId)
+    }
     if (existing == null) {
       existing = client.compute().securityGroups().create(securityGroupName, description)
+    } else {
+      client.compute().securityGroups().update(existing.id, securityGroupName, description)
     }
 
     //remove existing rules
@@ -78,13 +89,12 @@ abstract class OpenstackClientProvider {
 
     //add new rules
     rules.each { rule ->
-    client.compute().securityGroups().createRule(Builders.secGroupRule()
-      .parentGroupId(existing.id)
-      .protocol(IPProtocol.valueOf(rule.ruleType))
-      .cidr(rule.cidr)
-      .range(rule.fromPort, rule.toPort).build())
+      client.compute().securityGroups().createRule(Builders.secGroupRule()
+        .parentGroupId(existing.id)
+        .protocol(IPProtocol.valueOf(rule.ruleType))
+        .cidr(rule.cidr)
+        .range(rule.fromPort, rule.toPort).build())
     }
-
   }
 
   /**

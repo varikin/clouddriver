@@ -27,6 +27,7 @@ import com.netflix.spinnaker.clouddriver.openstack.deploy.description.OpenstackA
  */
 class OpenstackSecurityGroupDescription extends OpenstackAtomicOperationDescription {
 
+  String id
   String name
   String description
   List<Rule> rules

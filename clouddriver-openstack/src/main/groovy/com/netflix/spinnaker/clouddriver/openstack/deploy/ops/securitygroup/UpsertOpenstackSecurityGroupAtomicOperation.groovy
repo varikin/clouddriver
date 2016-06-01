@@ -39,11 +39,20 @@ class UpsertOpenstackSecurityGroupAtomicOperation implements AtomicOperation<Voi
     TaskRepository.threadLocalTask.get()
   }
   //TODO test
+  //TODO validate
+  /*
+  * Create:
+  * curl -X POST -H "Content-Type: application/json" -d '[ { "upsertSecurityGroup": { "name": "sg-test-1", "description": "test", "account": "test", "rules": [ { "fromPort": 80, "toPort": 90, "cidr": "0.0.0.0/0"  } ] } } ]' localhost:7002/openstack/ops
+  * Update:
+  * curl -X POST -H "Content-Type: application/json" -d '[ { "upsertSecurityGroup": { "id": "e56fa7eb-550d-42d4-8d3f-f658fbacd496", "name": "sg-test-1", "description": "test", "account": "test", "rules": [ { "fromPort": 80, "toPort": 90, "cidr": "0.0.0.0/0"  } ] } } ]' localhost:7002/openstack/ops
+  * Task status:
+  * curl -X GET -H "Accept: application/json" localhost:7002/task/1
+  */
   @Override
   Void operate(List priorOutputs) {
     task.updateStatus BASE_PHASE, "Upserting security group ${description.name}..."
 
-    description.credentials.provider.upsertSecurityGroup(description.name, description.description, description.rules)
+    description.credentials.provider.upsertSecurityGroup(description.id, description.name, description.description, description.rules)
 
     task.updateStatus BASE_PHASE, "Finished upserting security group ${description.name}."
   }

@@ -22,6 +22,7 @@ import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygr
 import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.OpenstackAttributeValidator
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import com.netflix.spinnaker.clouddriver.security.AccountCredentialsProvider
+import org.apache.commons.lang.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.validation.Errors
@@ -40,8 +41,17 @@ class UpsertOpenstackSecurityGroupDescriptionValidator extends DescriptionValida
   void validate(List priorDescriptions, OpenstackSecurityGroupDescription description, Errors errors) {
     def validator = new OpenstackAttributeValidator("terminateOpenstackInstancesAtomicOperationDescription", errors)
     validator.validateCredentials(description.account, accountCredentialsProvider)
-    validator.validateNotEmpty(description.name, "name")
-    validator.validateNotEmpty(description.rules, "rules")
+    if (StringUtils.isNotEmpty(description.id)) {
+      validator.validateUUID(description.id, "id")
+    }
+    if (!description.rules.isEmpty()) {
+      description.rules.each { r ->
+        validator.validateCIDR(r.cidr, "cidr")
+        validator.validatePort(r.fromPort, "fromPort")
+        validator.validatePort(r.toPort, "toPort")
+        validator.validateNotEmpty(r.ruleType, "ruleType")
+      }
+    }
   }
 
 }
