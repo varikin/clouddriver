@@ -69,4 +69,25 @@ class OpenstackClientProviderSpec extends Specification {
     ex.message.contains("foo")
     ex.message.contains(OPERATION)
   }
+
+  def "handle request non-action response"() {
+    setup:
+    def object = new Object()
+
+    when:
+    def response = provider.handleRequest(OPERATION) { object }
+
+    then:
+    object == response
+    noExceptionThrown()
+  }
+
+  def "handle request null response"() {
+    when:
+    def response = provider.handleRequest(OPERATION) { null }
+
+    then:
+    response == null
+    noExceptionThrown()
+  }
 }

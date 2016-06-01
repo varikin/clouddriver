@@ -22,6 +22,7 @@ import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.apache.commons.lang.StringUtils
 import org.openstack4j.api.Builders
 import org.openstack4j.api.OSClient
+import org.openstack4j.api.compute.ComputeSecurityGroupService
 import org.openstack4j.model.common.ActionResponse
 import org.openstack4j.model.compute.IPProtocol
 import org.openstack4j.model.compute.RebootType
@@ -57,59 +58,66 @@ abstract class OpenstackClientProvider {
   }
 
   //TODO test
-  //TODO wrap calls to client in handleRequest closure. Some calls dont return
-  //and ActionResponse so we need to be able to handle this.
   /**
-   * Create or update a security group, applying a list of rules.
+   * Create or update a security group, applying a list of rules. If the securityGroupId is provided, updates an existing
+   * security group, else creates a new security group.
    *
    * Note: 2 default egress rules are created when creating a new security group
    * automatically with remote IP prefixes 0.0.0.0/0 and ::/0.
    *
-   * @param securityGroupName
-   * @param description
-   * @param rules
+   * @param securityGroupId id of an existing security group to update
+   * @param securityGroupName name security group
+   * @param description description of the security group
+   * @param rules list of rules for the security group
    */
   void upsertSecurityGroup(String securityGroupId, String securityGroupName, String description, List<OpenstackSecurityGroupDescription.Rule> rules) {
 
-    //try getting existing security group, update if needed
-    SecGroupExtension existing
-    if (StringUtils.isNotEmpty(securityGroupId)) {
-      existing = client.compute().securityGroups().get(securityGroupId)
-    }
-    if (existing == null) {
-      existing = client.compute().securityGroups().create(securityGroupName, description)
-    } else {
-      client.compute().securityGroups().update(existing.id, securityGroupName, description)
-    }
+     handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
 
-    //remove existing rules
-    existing.rules.each { rule ->
-      client.compute().securityGroups().deleteRule(rule.id)
-    }
+       // The call to getClient reauthentictes via a token, so grab once for this method
+       def securityGroupsApi = client.compute().securityGroups()
 
-    //add new rules
-    rules.each { rule ->
-      client.compute().securityGroups().createRule(Builders.secGroupRule()
-        .parentGroupId(existing.id)
-        .protocol(IPProtocol.valueOf(rule.ruleType))
-        .cidr(rule.cidr)
-        .range(rule.fromPort, rule.toPort).build())
+      // Try getting existing security group, update if needed
+      SecGroupExtension existing
+      if (StringUtils.isNotEmpty(securityGroupId)) {
+        existing = securityGroupsApi.get(securityGroupId)
+      }
+      if (existing == null) {
+        existing = securityGroupsApi.create(securityGroupName, description)
+      } else {
+        securityGroupsApi.update(existing.id, securityGroupName, description)
+      }
+
+      //remove existing rules
+      existing.rules.each { rule ->
+        securityGroupsApi.deleteRule(rule.id)
+      }
+
+      //add new rules
+      rules.each { rule ->
+        securityGroupsApi.createRule(Builders.secGroupRule()
+          .parentGroupId(existing.id)
+          .protocol(IPProtocol.valueOf(rule.ruleType))
+          .cidr(rule.cidr)
+          .range(rule.fromPort, rule.toPort).build())
+      }
     }
   }
 
   /**
-   * Handler for an openstack4j request.
-   * @param closure
-   * @return
+   * Handler for an Openstack4J request with error common handling.
+   * @param operation to add context to error messages
+   * @param closure makes the needed Openstack4J request
+   * @return returns the result from the closure
    */
-  ActionResponse handleRequest(String operation, Closure closure) {
-    ActionResponse result
+  def handleRequest(String operation, Closure closure) {
+    def result
     try {
       result = closure()
     } catch (Exception e) {
       throw new OpenstackOperationException(operation, e)
     }
-    if (!result.isSuccess()) {
+    if (result instanceof ActionResponse && !result.isSuccess()) {
       throw new OpenstackOperationException(result, operation)
     }
     result

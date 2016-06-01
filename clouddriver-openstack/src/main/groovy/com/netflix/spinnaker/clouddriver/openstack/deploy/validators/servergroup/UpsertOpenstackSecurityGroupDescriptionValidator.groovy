@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component
 import org.springframework.validation.Errors
 
 /**
- *
+ * Validates the upsert security group operation description.
  */
 @OpenstackOperation(AtomicOperations.UPSERT_SECURITY_GROUP)
 @Component
