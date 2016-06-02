@@ -57,7 +57,6 @@ abstract class OpenstackClientProvider {
     }
   }
 
-  //TODO test
   /**
    * Create or update a security group, applying a list of rules. If the securityGroupId is provided, updates an existing
    * security group, else creates a new security group.
@@ -78,25 +77,25 @@ abstract class OpenstackClientProvider {
        def securityGroupsApi = client.compute().securityGroups()
 
       // Try getting existing security group, update if needed
-      SecGroupExtension existing
+      SecGroupExtension securityGroup
       if (StringUtils.isNotEmpty(securityGroupId)) {
-        existing = securityGroupsApi.get(securityGroupId)
+        securityGroup = securityGroupsApi.get(securityGroupId)
       }
-      if (existing == null) {
-        existing = securityGroupsApi.create(securityGroupName, description)
+      if (securityGroup  == null) {
+        securityGroup = securityGroupsApi.create(securityGroupName, description)
       } else {
-        securityGroupsApi.update(existing.id, securityGroupName, description)
+        securityGroup  = securityGroupsApi.update(securityGroup.id, securityGroupName, description)
       }
 
       //remove existing rules
-      existing.rules.each { rule ->
+       securityGroup.rules.each { rule ->
         securityGroupsApi.deleteRule(rule.id)
       }
 
       //add new rules
       rules.each { rule ->
         securityGroupsApi.createRule(Builders.secGroupRule()
-          .parentGroupId(existing.id)
+          .parentGroupId(securityGroup.id)
           .protocol(IPProtocol.valueOf(rule.ruleType))
           .cidr(rule.cidr)
           .range(rule.fromPort, rule.toPort).build())

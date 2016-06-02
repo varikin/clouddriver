@@ -25,11 +25,15 @@ class OpenstackOperationException extends RuntimeException {
     super("$operation failed: ${e.message}".toString(), e)
   }
 
+  OpenstackOperationException(String operation, String msg) {
+    super("$operation failed: $msg")
+  }
+
   OpenstackOperationException(ActionResponse actionResponse, String operation) {
-    super("$operation failed: fault $actionResponse.fault with code $actionResponse.code".toString())
+    super("$operation failed: fault $actionResponse.fault with code $actionResponse.code")
   }
 
   OpenstackOperationException(String account, String operation, Exception e) {
-    super("$operation for account $account failed: ${e.message}".toString(), e)
+    super("$operation for account $account failed: ${e.message}", e)
   }
 }
