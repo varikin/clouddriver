@@ -38,8 +38,7 @@ class UpsertOpenstackSecurityGroupAtomicOperation implements AtomicOperation<Voi
   protected static Task getTask() {
     TaskRepository.threadLocalTask.get()
   }
-  //TODO test
-  //TODO validate
+
   /*
   * Create:
   * curl -X POST -H "Content-Type: application/json" -d '[ { "upsertSecurityGroup": { "name": "sg-test-1", "description": "test", "account": "test", "rules": [ { "fromPort": 80, "toPort": 90, "cidr": "0.0.0.0/0"  } ] } } ]' localhost:7002/openstack/ops
