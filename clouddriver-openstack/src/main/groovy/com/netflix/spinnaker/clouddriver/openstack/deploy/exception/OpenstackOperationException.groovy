@@ -22,7 +22,7 @@ import org.openstack4j.model.common.ActionResponse
 @InheritConstructors
 class OpenstackOperationException extends RuntimeException {
   OpenstackOperationException(String operation, Exception e) {
-    super("$operation failed: ${e.message}".toString(), e)
+    super("$operation failed: ${e.message}", e)
   }
 
   OpenstackOperationException(String operation, String msg) {

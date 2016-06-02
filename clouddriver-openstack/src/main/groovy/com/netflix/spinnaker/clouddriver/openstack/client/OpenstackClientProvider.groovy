@@ -73,7 +73,7 @@ abstract class OpenstackClientProvider {
 
      handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
 
-       // The call to getClient reauthentictes via a token, so grab once for this method
+       // The call to getClient reauthentictes via a token, so grab once for this method to avoid unnecessary reauthentications
        def securityGroupsApi = client.compute().securityGroups()
 
       // Try getting existing security group, update if needed
@@ -87,12 +87,11 @@ abstract class OpenstackClientProvider {
         securityGroup  = securityGroupsApi.update(securityGroup.id, securityGroupName, description)
       }
 
-      //remove existing rules
-       securityGroup.rules.each { rule ->
+      // TODO: Find the different between existing rules and only apply that instead of deleting and re-creating all the rules
+      securityGroup.rules.each { rule ->
         securityGroupsApi.deleteRule(rule.id)
       }
 
-      //add new rules
       rules.each { rule ->
         securityGroupsApi.createRule(Builders.secGroupRule()
           .parentGroupId(securityGroup.id)
