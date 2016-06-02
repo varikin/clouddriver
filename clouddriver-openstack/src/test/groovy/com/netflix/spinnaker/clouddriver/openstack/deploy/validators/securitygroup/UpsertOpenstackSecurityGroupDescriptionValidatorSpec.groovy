@@ -15,10 +15,10 @@
  *
  */
 
-package com.netflix.spinnaker.clouddriver.openstack.deploy.validators.servergroup
+package com.netflix.spinnaker.clouddriver.openstack.deploy.validators.securitygroup
 
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.OpenstackSecurityGroupDescription
-import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.instance.RebootOpenstackInstancesDescriptionValidator
+import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.securitygroup.UpsertOpenstackSecurityGroupDescriptionValidator
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackCredentials
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackNamedAccountCredentials
 import com.netflix.spinnaker.clouddriver.security.AccountCredentialsProvider
