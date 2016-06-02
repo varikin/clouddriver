@@ -39,7 +39,7 @@ class UpsertOpenstackSecurityGroupDescriptionValidator extends DescriptionValida
 
   @Override
   void validate(List priorDescriptions, OpenstackSecurityGroupDescription description, Errors errors) {
-    def validator = new OpenstackAttributeValidator("terminateOpenstackInstancesAtomicOperationDescription", errors)
+    def validator = new OpenstackAttributeValidator("upsertOpenstackSecurityGroupAtomicOperationDescription", errors)
     validator.validateCredentials(description.account, accountCredentialsProvider)
     if (StringUtils.isNotEmpty(description.id)) {
       validator.validateUUID(description.id, "id")
