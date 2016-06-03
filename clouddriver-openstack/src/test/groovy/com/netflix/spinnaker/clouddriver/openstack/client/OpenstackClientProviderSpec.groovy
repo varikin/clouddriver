@@ -16,19 +16,15 @@
 
 package com.netflix.spinnaker.clouddriver.openstack.client
 
-import com.netflix.spinnaker.clouddriver.model.securitygroups.Rule
-import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.OpenstackSecurityGroupDescription
+import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.UpsertOpenstackSecurityGroupDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
-import org.openstack4j.api.Builders
 import org.openstack4j.api.OSClient
 import org.openstack4j.api.compute.ComputeSecurityGroupService
 import org.openstack4j.api.compute.ComputeService
 import org.openstack4j.model.common.ActionResponse
-import org.openstack4j.model.common.Link
 import org.openstack4j.model.compute.IPProtocol
 import org.openstack4j.model.compute.SecGroupExtension
-import org.openstack4j.model.network.SecurityGroupRule
 import org.openstack4j.openstack.compute.domain.NovaSecGroupExtension
 import spock.lang.Specification
 
@@ -86,8 +82,8 @@ class OpenstackClientProviderSpec extends Specification {
     def description = "A description"
     SecGroupExtension securityGroup = new NovaSecGroupExtension()
     def rules = [
-      new OpenstackSecurityGroupDescription.Rule(fromPort: 80, toPort: 80, cidr: "0.0.0.0/0"),
-      new OpenstackSecurityGroupDescription.Rule(fromPort: 443, toPort: 443, cidr: "0.0.0.0/0")
+      new UpsertOpenstackSecurityGroupDescription.Rule(fromPort: 80, toPort: 80, cidr: "0.0.0.0/0"),
+      new UpsertOpenstackSecurityGroupDescription.Rule(fromPort: 443, toPort: 443, cidr: "0.0.0.0/0")
     ]
 
     when:
@@ -122,8 +118,8 @@ class OpenstackClientProviderSpec extends Specification {
     def existingSecurityGroup = new NovaSecGroupExtension(id: id, name: "name", description: "desc", rules: existingRules)
 
     def newRules = [
-      new OpenstackSecurityGroupDescription.Rule(fromPort: 80, toPort: 80, cidr: "0.0.0.0/0"),
-      new OpenstackSecurityGroupDescription.Rule(fromPort: 443, toPort: 443, cidr: "0.0.0.0/0")
+      new UpsertOpenstackSecurityGroupDescription.Rule(fromPort: 80, toPort: 80, cidr: "0.0.0.0/0"),
+      new UpsertOpenstackSecurityGroupDescription.Rule(fromPort: 443, toPort: 443, cidr: "0.0.0.0/0")
     ]
 
     when:
@@ -161,6 +157,43 @@ class OpenstackClientProviderSpec extends Specification {
     OpenstackOperationException ex = thrown(OpenstackOperationException)
     ex.message.contains("foo")
     ex.message.contains(AtomicOperations.UPSERT_SECURITY_GROUP)
+  }
+
+  def "delete security group"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+    def id = UUID.randomUUID().toString()
+    def success = ActionResponse.actionSuccess()
+
+    when:
+    provider.deleteSecurityGroup(id)
+
+    then:
+    1 * securityGroupService.delete(id) >> success
+  }
+
+  def "delete security group handles failure"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+    def id = UUID.randomUUID().toString()
+    def failure = ActionResponse.actionFailed("foo", 500)
+
+    when:
+    provider.deleteSecurityGroup(id)
+
+    then:
+    1 * securityGroupService.delete(id) >> failure
+    OpenstackOperationException ex = thrown(OpenstackOperationException)
+    ex.message.contains("foo")
+    ex.message.contains("500")
+    ex.message.contains(AtomicOperations.DELETE_SECURITY_GROUP)
+
   }
 
   def "handle request succeeds"() {
